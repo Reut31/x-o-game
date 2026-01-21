@@ -69,3 +69,36 @@ body{
 .restart:hover{
   background: var(--accent2);
 }
+
+.layout{
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.history{
+  min-width: 180px;
+}
+
+.historyTitle{
+  margin: 0 0 10px 0;
+}
+
+.movesList{
+  margin: 0;
+  padding-left: 18px;
+}
+
+.moveBtn{
+  cursor: pointer;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: white;
+}
+
+.activeMove{
+  border-color: #ff4d6d;
+  font-weight: 700;
+}
