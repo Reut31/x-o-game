@@ -1,38 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Board from "./components/Board.jsx";
 import "./App.css";
+import { calculateWinner, getBoard } from "./tictactoe.jsx";
 
-function calculateWinner(b) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-
-  for (const [a, c, d] of lines) {
-    if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a];
+function loadTurns() {
+  try {
+    const saved = localStorage.getItem("turns");
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
   }
-  return null;
 }
 
 export default function App() {
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem("history");
-    return saved ? JSON.parse(saved) : [Array(9).fill(null)];
-  });
+  const [turns, setTurns] = useState(loadTurns);
+  const [turnIndex, setTurnIndex] = useState(() => loadTurns().length);
 
-  const [currentMove, setCurrentMove] = useState(() => {
-    const saved = localStorage.getItem("currentMove");
-    return saved ? JSON.parse(saved) : 0;
-  });
+  const currentBoard = useMemo(
+    () => getBoard(turns, turnIndex),
+    [turns, turnIndex]
+  );
 
-  const currentBoard = history[currentMove];
-  const xIsNext = currentMove % 2 === 0;
+  const xIsNext = turnIndex % 2 === 0;
 
   const winner = calculateWinner(currentBoard);
   const isDraw = !winner && currentBoard.every((x) => x !== null);
@@ -44,57 +33,62 @@ export default function App() {
     : `תור: ${xIsNext ? "X" : "O"}`;
 
   useEffect(() => {
-    localStorage.setItem("history", JSON.stringify(history));
-    localStorage.setItem("currentMove", JSON.stringify(currentMove));
-  }, [history, currentMove]);
+    localStorage.setItem("turns", JSON.stringify(turns));
+    // ניקוי נתונים מהגרסה הישנה (אופציונלי)
+    localStorage.removeItem("history");
+    localStorage.removeItem("currentMove");
+  }, [turns]);
 
   function squareClick(i) {
     if (currentBoard[i] || winner) return;
 
-    const next = currentBoard.slice();
-    next[i] = xIsNext ? "X" : "O";
+    const value = xIsNext ? "X" : "O";
+    const move = { index: i, value };
 
-    const nextHistory = history.slice(0, currentMove + 1);
-    setHistory([...nextHistory, next]);
-    setCurrentMove(nextHistory.length);
+    // אם עשית time-travel ואז שיחקת מהלך חדש -> חותכים את העתיד
+    const nextTurns = turns.slice(0, turnIndex);
+    const updatedTurns = [...nextTurns, move];
+
+    setTurns(updatedTurns);
+    setTurnIndex(updatedTurns.length);
   }
 
   function toStart() {
-    setHistory([Array(9).fill(null)]);
-    setCurrentMove(0);
-    localStorage.removeItem("history");
-    localStorage.removeItem("currentMove");
+    setTurns([]);
+    setTurnIndex(0);
+    localStorage.removeItem("turns");
   }
 
- const moves = history.map((_, move) => {
-  if (move === 0) {
+  const toHeb = (v) => v;
+
+  const moves = Array.from({ length: turns.length + 1 }, (_, move) => {
+    if (move === 0) {
+      return (
+        <li key={move}>
+          <button
+            className={`moveBtn ${move === turnIndex ? "activeMove" : ""}`}
+            onClick={() => setTurnIndex(move)}
+          >
+            Start
+          </button>
+        </li>
+      );
+    }
+
+    const played = turns[move - 1]; // המהלך #move נמצא ב-index move-1
+    const label = `תור ${toHeb(played.value)}`;
+
     return (
       <li key={move}>
         <button
-          className={`moveBtn ${move === currentMove ? "activeMove" : ""}`}
-          onClick={() => setCurrentMove(move)}
+          className={`moveBtn ${move === turnIndex ? "activeMove" : ""}`}
+          onClick={() => setTurnIndex(move)}
         >
-          התחלה
+          {label}
         </button>
       </li>
     );
-  }
-
-  const playedBy = move % 2 === 1 ? "X" : "O";
-  const label = `מהלך #${move} (${playedBy})`;
-
-  return (
-    <li key={move}>
-      <button
-        className={`moveBtn ${move === currentMove ? "activeMove" : ""}`}
-        onClick={() => setCurrentMove(move)}
-      >
-        {label}
-      </button>
-    </li>
-  );
-});
-
+  });
 
   return (
     <div className="layout">
@@ -104,12 +98,12 @@ export default function App() {
         <Board board={currentBoard} onSquareClick={squareClick} />
 
         <button className="restart" onClick={toStart}>
-          התחילו מחדש
+          Start Over
         </button>
       </div>
 
       <aside className="history">
-        <h3 className="historyTitle">היסטוריה</h3>
+        <h3 className="historyTitle">Turns</h3>
         <ol className="movesList">{moves}</ol>
       </aside>
     </div>
