@@ -34,7 +34,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("turns", JSON.stringify(turns));
-    // ניקוי נתונים מהגרסה הישנה (אופציונלי)
+
     localStorage.removeItem("history");
     localStorage.removeItem("currentMove");
   }, [turns]);
@@ -45,7 +45,7 @@ export default function App() {
     const value = xIsNext ? "X" : "O";
     const move = { index: i, value };
 
-    // אם עשית time-travel ואז שיחקת מהלך חדש -> חותכים את העתיד
+
     const nextTurns = turns.slice(0, turnIndex);
     const updatedTurns = [...nextTurns, move];
 
@@ -75,7 +75,7 @@ export default function App() {
       );
     }
 
-    const played = turns[move - 1]; // המהלך #move נמצא ב-index move-1
+    const played = turns[move - 1];
     const label = `תור ${toHeb(played.value)}`;
 
     return (
